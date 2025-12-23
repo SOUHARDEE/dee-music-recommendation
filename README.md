@@ -125,9 +125,7 @@ Data visualization
 
 Client-side data processing
 
-Viva Explanation (One Line):
 
-“The system recommends music using popularity-based and feature-based clustering techniques applied to Kaggle Spotify datasets, with interactive visualizations deployed on Firebase.”
 
 🔮 Future Enhancements
 
@@ -146,20 +144,3 @@ Backend-based recommendation logic
 Souhardee Sen
 B.Tech – Computer Science (AI & ML)
 
-📄 License
-
-This project is for educational and academic use.
-
-If you want, next I can help you:
-
-Add screenshots to README
-
-Write a project report
-
-Prepare viva questions & answers
-
-Create presentation slides
-
-Just tell me 👍
-
-ChatGPT can make mistakes. Check important info. See Cookie Preferences.
