@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>🎧 Dee Music Recommendation System</title>
+
+  <!-- CSV Parser -->
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(120deg, #121212, #1b1b1b);
+      color: white;
+      text-align: center;
+      padding: 20px;
+    }
+
+    h1 { color: #1db954; }
+    h2 { color: #1db954; }
+
+    .genre-buttons button {
+      margin: 6px;
+      padding: 10px 20px;
+      border-radius: 25px;
+      border: none;
+      cursor: pointer;
+      background: #1db954;
+      font-weight: bold;
+      color: black;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 30px;
+      margin-top: 30px;
+    }
+
+    .section {
+      background: #181818;
+      padding: 20px;
+      border-radius: 15px;
+    }
+
+    ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    li {
+      background: #1e1e1e;
+      margin: 8px 0;
+      padding: 10px;
+      border-radius: 8px;
+      text-align: left;
+    }
+
+    .tag {
+      float: right;
+      color: #1db954;
+      font-weight: bold;
+      font-size: 12px;
+    }
+
+    canvas {
+      max-width: 400px;
+      margin: 20px auto;
+    }
+
+    @media (max-width: 900px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<h1>🎧 Dee Music Recommendation System</h1>
+<p>Popularity-based and Feature-based clustering using Kaggle dataset</p>
+
+<div class="genre-buttons">
+  <button onclick="analyzeGenre('rock')">Rock</button>
+  <button onclick="analyzeGenre('pop')">Pop</button>
+  <button onclick="analyzeGenre('hip hop')">Hip-Hop</button>
+  <button onclick="analyzeGenre('jazz')">Jazz</button>
+  <button onclick="analyzeGenre('classical')">Classical</button>
+</div>
+
+<div class="layout">
+
+  <!-- POPULARITY BASED -->
+  <div class="section">
+    <h2>🔥 Popularity-Based Clustering</h2>
+    <canvas id="popChart"></canvas>
+    <div id="popularityResults"></div>
+  </div>
+
+  <!-- FEATURE BASED -->
+  <div class="section">
+    <h2>🎵 Feature-Based Clustering</h2>
+    <canvas id="featureChart"></canvas>
+    <div id="featureResults"></div>
+  </div>
+
+</div>
+
+<script>
+/* =========================
+   GLOBAL DATA
+========================= */
+let songs = [];
+let filesLoaded = 0;
+let popChart, featureChart;
+
+/* =========================
+   LOAD CSV FILES
+   energy        → 0
+   danceability  → 2
+   genre         → 3
+   artist        → 7
+   popularity    → 10
+   title         → 12
+========================= */
+function loadCSV(file) {
+  Papa.parse(file, {
+    download: true,
+    skipEmptyLines: true,
+    complete: function(results) {
+      results.data.slice(1).forEach(row => {
+        if (row[3] && row[7] && row[12]) {
+          songs.push({
+            energy: Number(row[0]),
+            dance: Number(row[2]),
+            genre: row[3].toLowerCase(),
+            artist: row[7],
+            popularity: Number(row[10]),
+            title: row[12]
+          });
+        }
+      });
+
+      filesLoaded++;
+      if (filesLoaded === 2) {
+        console.log("✅ Dataset loaded:", songs.length);
+      }
+    }
+  });
+}
+
+loadCSV("high_popularity_spotify.csv");
+loadCSV("low_popularity_spotify_data.csv");
+
+/* =========================
+   MAIN ANALYSIS
+========================= */
+function analyzeGenre(genre) {
+  const filtered = songs.filter(s => s.genre.includes(genre));
+
+  popularityClustering(filtered);
+  featureClustering(filtered);
+}
+
+/* =========================
+   POPULARITY CLUSTERING
+========================= */
+function popularityClustering(list) {
+  const sorted = [...list].sort((a, b) => b.popularity - a.popularity);
+
+  const high = sorted.slice(0, 5);
+  const mid = sorted.slice(5, 10);
+  const low = sorted.slice(10, 15);
+
+  document.getElementById("popularityResults").innerHTML =
+    renderList("🔥 High", high) +
+    renderList("⭐ Medium", mid) +
+    renderList("🌱 Low", low);
+
+  drawPopChart(high.length, mid.length, low.length);
+}
+
+/* =========================
+   FEATURE CLUSTERING
+========================= */
+function featureClustering(list) {
+  const high = [];
+  const mid = [];
+  const low = [];
+
+  list.forEach(s => {
+    if (s.energy >= 0.7 && s.dance >= 0.6) high.push(s);
+    else if (s.energy >= 0.4) mid.push(s);
+    else low.push(s);
+  });
+
+  document.getElementById("featureResults").innerHTML =
+    renderList("🔥 High Energy", high) +
+    renderList("🎶 Medium Energy", mid) +
+    renderList("😌 Calm", low);
+
+  drawFeatureChart(high.length, mid.length, low.length);
+}
+
+/* =========================
+   RENDER HELPERS
+========================= */
+function renderList(title, list) {
+  let html = `<h3>${title}</h3><ul>`;
+  list.slice(0, 6).forEach(s => {
+    html += `
+      <li>
+        <strong>${s.title}</strong><br>
+        ${s.artist}
+        <span class="tag">${s.popularity}</span>
+      </li>
+    `;
+  });
+  html += "</ul>";
+  return html;
+}
+
+/* =========================
+   CHARTS
+========================= */
+function drawPopChart(h, m, l) {
+  const ctx = document.getElementById("popChart");
+  if (popChart) popChart.destroy();
+
+  popChart = new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels: ["High", "Medium", "Low"],
+      datasets: [{
+        data: [h, m, l],
+        backgroundColor: ["#1db954", "#f1c40f", "#e74c3c"]
+      }]
+    },
+    options: { plugins: { legend: { display: false } } }
+  });
+}
+
+function drawFeatureChart(h, m, l) {
+  const ctx = document.getElementById("featureChart");
+  if (featureChart) featureChart.destroy();
+
+  featureChart = new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels: ["High Energy", "Medium", "Low Energy"],
+      datasets: [{
+        data: [h, m, l],
+        backgroundColor: ["#1db954", "#f39c12", "#3498db"]
+      }]
+    },
+    options: { plugins: { legend: { display: false } } }
+  });
+}
+</script>
+
+</body>
+</html>

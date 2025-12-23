@@ -1,0 +1,15 @@
+{
+  "projects": {
+    "default": "dee-music-reco-2025"
+  },
+  "targets": {
+    "dee-music-reco-2025": {
+      "hosting": {
+        "default": [
+          "dee-music-reco-2025-site"
+        ]
+      }
+    }
+  },
+  "etags": {}
+}
